@@ -35,16 +35,23 @@ app.use(express.static(clientBuildPath, {
   etag: false
 }));
 
+// Unknown API routes must return JSON, never the SPA HTML.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found', path: req.originalUrl });
+});
+
 // SPA fallback - serve the admin app's index.html under /admin,
-// and the public MVA website's index.html for everything else
-app.get('api/health', (req, res) => {
+// and the public MVA website's index.html for everything else.
+// Registered as a pathless middleware so it works on Express 5
+// (where `app.get('*', ...)` is no longer valid).
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const isAdmin = req.path === '/admin' || req.path.startsWith('/admin/');
   const indexPath = path.join(clientBuildPath, isAdmin ? 'admin/index.html' : 'index.html');
-  console.log(`📄 Serving: ${req.path} -> ${indexPath}`);
   res.sendFile(indexPath, (err) => {
     if (err) {
-      console.error(`❌ Error serving index.html:`, err.message);
-      res.status(404).json({ error: 'Not found', path: req.path });
+      console.error('❌ Error serving index.html:', err.message);
+      res.status(500).json({ error: 'Failed to load application' });
     }
   });
 });
