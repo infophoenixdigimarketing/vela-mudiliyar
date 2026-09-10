@@ -1,0 +1,9 @@
+node_modules/
+client/node_modules/
+client/dist/
+data/mva.db*
+server/uploads/
+.env
+.env.local
+dist/
+.DS_Store

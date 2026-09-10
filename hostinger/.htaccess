@@ -1,0 +1,8 @@
+# MVA Membership System — put this in public_html/
+RewriteEngine On
+# API requests go to the api folder untouched
+RewriteRule ^api/ - [L]
+# React Router SPA fallback: any non-file path serves index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
