@@ -222,23 +222,82 @@ export function getPrintHistory() {
 }
 
 // ================= Family grouping =================
+// Two members belong to the same family when they share a phone number OR an
+// explicit family link (family_group_id, or a family_member_id pointing at the
+// other member). Links are resolved transitively with a union-find, so a chain
+// A -> B -> C collapses into a single family group.
 export function getFamilies() {
-  const byPhone = {};
-  getAllMembers().forEach(m => {
-    const p = (m.phone || '').trim();
-    if (!p) return;
-    (byPhone[p] = byPhone[p] || []).push(m);
+  const members = getAllMembers();
+  const parent = {};
+  const ensure = (x) => { if (!(x in parent)) parent[x] = x; };
+  const find = (x) => {
+    ensure(x);
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  };
+  const union = (a, b) => { parent[find(a)] = find(b); };
+
+  members.forEach(m => ensure(`m:${m.id}`));
+  members.forEach(m => {
+    const phone = (m.phone || '').trim();
+    if (phone) union(`m:${m.id}`, `p:${phone}`);
+    if (m.family_group_id) union(`m:${m.id}`, `g:${m.family_group_id}`);
+    if (m.family_member_id !== undefined && m.family_member_id !== null && m.family_member_id !== '') {
+      union(`m:${m.id}`, `m:${m.family_member_id}`);
+    }
   });
-  return Object.entries(byPhone)
-    .filter(([, list]) => list.length > 1)
-    .map(([phone, list]) => ({ phone, members: list }));
+
+  const groups = {};
+  members.forEach(m => {
+    const root = find(`m:${m.id}`);
+    (groups[root] = groups[root] || []).push(m);
+  });
+
+  return Object.values(groups)
+    .filter(list => list.length > 1)
+    .map(list => {
+      const sorted = [...list].sort((a, b) => Number(a.id) - Number(b.id));
+      // Phone shared by the most members — used for the card header / search
+      const counts = {};
+      sorted.forEach(m => {
+        const p = (m.phone || '').trim();
+        if (p) counts[p] = (counts[p] || 0) + 1;
+      });
+      const topPhone = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      return { id: sorted.map(m => m.id).join('-'), phone: topPhone, members: sorted };
+    })
+    .sort((a, b) => b.members.length - a.members.length);
 }
 
 export function getFamilyOf(member) {
-  if (!member?.phone) return [];
-  return getAllMembers().filter(
-    m => m.phone === member.phone && String(m.id) !== String(member.id)
+  if (!member) return [];
+  const fam = getFamilies().find(f =>
+    f.members.some(m => String(m.id) === String(member.id))
   );
+  return fam ? fam.members.filter(m => String(m.id) !== String(member.id)) : [];
+}
+
+// Establish a two-way family link between `member` (about to be saved) and an
+// existing member. Returns `member` with family_member_id / family_group_id set;
+// also writes the shared group id back onto the target so the connection shows
+// on both records and in the Families page. Never removes an existing group.
+export function linkFamily(member, familyMemberId) {
+  if (familyMemberId === undefined || familyMemberId === null || familyMemberId === '') {
+    // Nothing selected — keep any group this member may already belong to
+    // (they might be the member others are linked *to*); just drop the pointer.
+    return { ...member, family_member_id: '' };
+  }
+  const target = getMemberById(familyMemberId);
+  if (!target) return { ...member, family_member_id: familyMemberId };
+
+  const groupId = target.family_group_id || `FAM-${target.id}`;
+  if (!target.family_group_id) {
+    saveMember({ ...target, family_group_id: groupId });
+  }
+  return { ...member, family_member_id: familyMemberId, family_group_id: groupId };
 }
 
 // ================= Departure register =================

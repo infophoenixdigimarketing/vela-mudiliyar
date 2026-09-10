@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getMemberById, getAllMembers, saveMember } from '../lib/memberStore';
+import { getMemberById, getAllMembers, saveMember, linkFamily } from '../lib/memberStore';
 
 export default function MemberForm() {
   const { id } = useParams();
@@ -120,7 +120,7 @@ export default function MemberForm() {
     setSaving(true);
 
     try {
-      const newMember = {
+      let newMember = {
         ...(member || {}),
         ...form,
         id: id ? Number(id) : Date.now(),
@@ -131,6 +131,10 @@ export default function MemberForm() {
         date_created: member?.date_created || new Date().toISOString(),
         date_updated: new Date().toISOString(),
       };
+
+      // Two-way family link: connect this member's (new) MVA ID with the
+      // selected existing member so both show in the same Families group.
+      newMember = linkFamily(newMember, form.family_member_id);
 
       saveMember(newMember);
       navigate(`/members/${newMember.id}`);

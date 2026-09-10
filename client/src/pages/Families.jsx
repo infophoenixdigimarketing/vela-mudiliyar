@@ -15,8 +15,12 @@ export default function Families() {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
-      f.phone.includes(q) ||
-      f.members.some(m => m.full_name.toLowerCase().includes(q) || m.mva_id.toLowerCase().includes(q))
+      (f.phone || '').includes(q) ||
+      f.members.some(m =>
+        m.full_name?.toLowerCase().includes(q) ||
+        m.mva_id?.toLowerCase().includes(q) ||
+        (m.phone || '').includes(q)
+      )
     );
   });
 
@@ -25,7 +29,7 @@ export default function Families() {
       <div>
         <h1 className="text-3xl font-bold text-navy">Family Groups</h1>
         <p className="text-gray-600 mt-1">
-          Members sharing the same phone number are grouped as one family
+          Members are grouped as one family when they share a phone number or are linked as family
         </p>
       </div>
 
@@ -52,19 +56,21 @@ export default function Families() {
 
       {filtered.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-10 text-center text-gray-500">
-          No family groups found. Families form automatically when two or more members share a phone number.
+          No family groups found. Families form when two or more members share a phone number, or when a member is linked to another via the "Family Member" field.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(f => (
-            <div key={f.phone} className="bg-white rounded-lg shadow p-5">
+            <div key={f.id} className="bg-white rounded-lg shadow p-5">
               <div className="flex items-center gap-2 pb-3 border-b border-gray-100 mb-3">
                 <div className="bg-navy/10 text-navy p-2 rounded-lg">
                   <Users size={18} />
                 </div>
                 <div>
                   <p className="text-sm font-bold text-navy flex items-center gap-1.5">
-                    <Phone size={12} /> {f.phone}
+                    {f.phone
+                      ? <><Phone size={12} /> {f.phone}</>
+                      : <>👨‍👩‍👧 Linked family</>}
                   </p>
                   <p className="text-xs text-gray-500">{f.members.length} members</p>
                 </div>

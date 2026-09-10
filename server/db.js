@@ -139,6 +139,8 @@ function initSchema() {
   addCol('signature', `signature TEXT`);  // base64 data URL
   addCol('departure_date', `departure_date TEXT`);
   addCol('departure_reason', `departure_reason TEXT`);
+  addCol('family_member_id', `family_member_id TEXT`);   // explicit "linked to" pointer
+  addCol('family_group_id', `family_group_id TEXT`);     // shared key for a family group
 }
 
 function hashPassword(password) {

@@ -340,11 +340,11 @@ export default function MemberView() {
             </div>
           )}
 
-          {/* Family Members (same phone number) */}
+          {/* Family Members (shared phone number or linked as family) */}
           {getFamilyOf(member).length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-bold text-navy mb-4">
-                👨‍👩‍👧 Family Members <span className="text-sm font-normal text-gray-500">(same phone number)</span>
+                👨‍👩‍👧 Family Members <span className="text-sm font-normal text-gray-500">(shared phone or linked)</span>
               </h3>
               <div className="space-y-2">
                 {getFamilyOf(member).map(fm => (
