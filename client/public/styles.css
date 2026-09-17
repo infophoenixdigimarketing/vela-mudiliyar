@@ -124,12 +124,12 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
     url('mva-assets/building.jpg') center 65% / cover no-repeat;
 }
 .hero-inner{ display:block; }
-.hero-text{ max-width: 680px; }
+.hero-text{ max-width: 760px; }
 .seal-line{
   font-size:.82rem; letter-spacing:.12em; text-transform:uppercase; color: var(--gold-light);
   font-weight:700; margin-bottom:18px;
 }
-.hero h1{ color:#fff; font-size: clamp(2.4rem, 5.2vw, 4rem); line-height:1.08; }
+.hero h1{ color:#fff; font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height:1.2; white-space: normal; }
 .hero-sub{ font-size:1.1rem; max-width: 52ch; color:#DCEAFB; margin-top:16px; }
 .hero-callout{
   display:flex; gap:0; margin: 26px 0 30px; padding: 16px 20px;
