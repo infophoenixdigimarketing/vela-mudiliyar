@@ -195,7 +195,7 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
 }
 .person-card{
   margin:0; background: var(--cream); border:1px solid var(--rule); border-radius:6px;
-  overflow:hidden; text-align:left; transition: transform .15s ease;
+  overflow:hidden; text-align:center; transition: transform .15s ease;
 }
 .person-card.lead{ border-color: var(--maroon); border-width:2px; }
 .person-card img{
