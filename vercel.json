@@ -2,7 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "client/dist",
+  "framework": null,
   "rewrites": [
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/bearers", "destination": "/bearers.html" },
+    { "source": "/report", "destination": "/report.html" },
+    { "source": "/finance", "destination": "/finance.html" },
+    { "source": "/services", "destination": "/services.html" },
+    { "source": "/membership", "destination": "/membership.html" },
+    { "source": "/awards", "destination": "/awards.html" },
+    { "source": "/memory", "destination": "/memory.html" },
+    { "source": "/contact", "destination": "/contact.html" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/admin/:path*", "destination": "/admin/index.html" }
