@@ -80,6 +80,21 @@ router.get('/', (req, res) => {
   }
 });
 
+// GET /api/members/stats/public — counts only, safe for the public website
+router.get('/stats/public', (req, res) => {
+  try {
+    const lifeMembers = db.prepare(
+      "SELECT COUNT(*) as total FROM members WHERE status = 'active' AND membership_type = 'life'"
+    ).get().total;
+    const totalMembers = db.prepare(
+      "SELECT COUNT(*) as total FROM members WHERE status = 'active'"
+    ).get().total;
+    res.json({ lifeMembers, totalMembers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/members/:id
 router.get('/:id', (req, res) => {
   const member = db.prepare('SELECT * FROM members WHERE id = ?').get(req.params.id);
@@ -87,9 +102,26 @@ router.get('/:id', (req, res) => {
   res.json(member);
 });
 
+// Columns the client must never dictate directly — either server-computed
+// (mva_id, serial_no) or not real member columns at all (the admin app's
+// local records use date_created/date_updated; the table has created_at/
+// updated_at instead). Passing these through used to crash every insert
+// with "table members has no column named date_created".
+const SERVER_OWNED_FIELDS = [
+  'mva_id', 'serial_no', 'created_at', 'updated_at', 'sync_status',
+  'date_created', 'date_updated',
+];
+
+function stripServerOwnedFields(data) {
+  const clean = { ...data };
+  for (const field of SERVER_OWNED_FIELDS) delete clean[field];
+  return clean;
+}
+
 // POST /api/members - create new member
 router.post('/', (req, res) => {
-  const { full_name, phone, dob, sex, blood_group, status = 'active', membership_type = 'life', ...data } = req.body;
+  const { full_name, phone, dob, sex, blood_group, status = 'active', membership_type = 'life', ...rest } = req.body;
+  const data = stripServerOwnedFields(rest);
 
   if (!full_name) return res.status(400).json({ error: 'Name required' });
 
@@ -106,18 +138,22 @@ router.post('/', (req, res) => {
       dobMonth = parsed.month() + 1;
     }
 
+    const extraCols = Object.keys(data);
+    const extraColsSql = extraCols.length ? `, ${extraCols.join(', ')}` : '';
+    const extraPlaceholders = extraCols.length ? `, ${extraCols.map(() => '?').join(', ')}` : '';
+
     const stmt = db.prepare(`
       INSERT INTO members (
         mva_id, serial_no, full_name, phone, dob, dob_day, dob_month, sex, blood_group,
-        status, membership_type, updated_at, sync_status, ${Object.keys(data).join(', ')}
+        status, membership_type, updated_at, sync_status${extraColsSql}
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), 'pending', ${Object.keys(data).map(() => '?').join(', ')}
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), 'pending'${extraPlaceholders}
       )
     `);
 
     const result = stmt.run(
       mvaId, newSerial, full_name, phone, dob, dobDay, dobMonth, sex, blood_group,
-      status, membership_type, ...Object.values(data)
+      status, membership_type, ...extraCols.map(k => data[k])
     );
 
     const newMember = db.prepare('SELECT * FROM members WHERE id = ?').get(result.lastInsertRowid);
@@ -129,7 +165,8 @@ router.post('/', (req, res) => {
 
 // PUT /api/members/:id - update member
 router.put('/:id', (req, res) => {
-  const { dob, ...data } = req.body;
+  const { dob, id, ...rest } = req.body;
+  const data = stripServerOwnedFields(rest);
 
   let dobDay = null, dobMonth = null;
   if (dob) {
@@ -138,18 +175,19 @@ router.put('/:id', (req, res) => {
     dobMonth = parsed.month() + 1;
   }
 
-  const updates = Object.keys(data).map(k => `${k} = ?`).join(', ');
-  if (dob) updates && (updates += ', dob_day = ?, dob_month = ?');
+  const cols = Object.keys(data);
+  let updates = cols.map(k => `${k} = ?`).join(', ');
+  if (dob) updates += (updates ? ', ' : '') + 'dob = ?, dob_day = ?, dob_month = ?';
 
-  const values = Object.values(data);
+  const values = cols.map(k => data[k]);
   if (dob) {
-    values.push(dobDay, dobMonth);
+    values.push(dob, dobDay, dobMonth);
   }
 
   try {
     db.prepare(`
       UPDATE members
-      SET ${updates}, updated_at = datetime('now'), sync_status = 'pending'
+      SET ${updates}${updates ? ',' : ''} updated_at = datetime('now'), sync_status = 'pending'
       WHERE id = ?
     `).run(...values, req.params.id);
 

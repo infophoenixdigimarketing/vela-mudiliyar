@@ -141,6 +141,8 @@ function initSchema() {
   addCol('departure_reason', `departure_reason TEXT`);
   addCol('family_member_id', `family_member_id TEXT`);   // explicit "linked to" pointer
   addCol('family_group_id', `family_group_id TEXT`);     // shared key for a family group
+  addCol('verification_sent_at', `verification_sent_at TEXT`); // WhatsApp/SMS verification sent
+  addCol('approved_at', `approved_at TEXT`);                    // member approved their ID card
 }
 
 function hashPassword(password) {

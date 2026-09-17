@@ -136,8 +136,20 @@ export default function MemberForm() {
       // selected existing member so both show in the same Families group.
       newMember = linkFamily(newMember, form.family_member_id);
 
-      saveMember(newMember);
-      navigate(`/members/${newMember.id}`);
+      // Wait for the server to actually confirm the write — a refresh right
+      // after saving must not race a still-in-flight save and make it look
+      // like the member vanished.
+      const { member: saved, synced } = await saveMember(newMember);
+      if (!synced) {
+        setError(
+          'Saved on this device, but could not reach the server to sync yet. ' +
+          'Please check your connection and try saving again before refreshing — ' +
+          'unsynced changes can be lost on refresh.'
+        );
+        setSaving(false);
+        return;
+      }
+      navigate(`/members/${saved.id}`);
     } catch (err) {
       setError('Failed to save member: ' + err.message);
     } finally {

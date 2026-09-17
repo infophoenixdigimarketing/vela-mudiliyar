@@ -12,20 +12,31 @@ export function isServerConnected() {
   return localStorage.getItem('serverConnected') === '1';
 }
 
+// GET /api/members is paginated ({ members, total, page, pages, ... }, capped
+// at 100 per page server-side) — walk every page so a roster bigger than 100
+// doesn't get silently truncated to page 1 on every sync.
+async function fetchAllMembers() {
+  const first = await apiFetch('members?limit=100&page=1');
+  const members = [...(first?.members || [])];
+  const totalPages = first?.pages || 1;
+  for (let page = 2; page <= totalPages; page++) {
+    const next = await apiFetch(`members?limit=100&page=${page}`);
+    members.push(...(next?.members || []));
+  }
+  return members;
+}
+
 // Pull everything from the server into the local cache
 export async function syncFromServer() {
   try {
     const ok = await apiAvailable();
     if (!ok) throw new Error('API not reachable');
-    const [membersRes, receipts, departures, history] = await Promise.all([
-      // GET /api/members is paginated ({ members, total, page, ... }),
-      // not a bare array — request the max page size and unwrap it.
-      apiFetch('members?limit=100'),
+    const [members, receipts, departures, history] = await Promise.all([
+      fetchAllMembers(),
       apiFetch('receipts'),
       apiFetch('departures'),
       apiFetch('history'),
     ]);
-    const members = Array.isArray(membersRes) ? membersRes : (membersRes?.members || []);
     localStorage.setItem('appMembers', JSON.stringify(members));
     localStorage.setItem('memberOverrides', '{}');
     localStorage.setItem('receipts', JSON.stringify(receipts || []));
@@ -40,11 +51,18 @@ export async function syncFromServer() {
   }
 }
 
-// Fire-and-forget push of one record to the server
-function pushToServer(collection, item) {
-  if (!isServerConnected()) return;
-  apiFetch(collection, { method: 'POST', body: JSON.stringify(item) })
-    .catch(e => console.warn(`Sync push failed (${collection}):`, e.message));
+// Push one record to the server. Returns the server's copy on success, or
+// null if the push failed/was skipped (offline) — callers that need to know
+// whether a save actually reached the server should check for null.
+async function pushToServer(collection, item, isUpdate) {
+  if (!isServerConnected()) return null;
+  try {
+    const path = isUpdate ? `${collection}/${item.id}` : collection;
+    return await apiFetch(path, { method: isUpdate ? 'PUT' : 'POST', body: JSON.stringify(item) });
+  } catch (e) {
+    console.warn(`Sync push failed (${collection}):`, e.message);
+    return null;
+  }
 }
 
 export function getMockMembers() {
@@ -104,8 +122,15 @@ export function getMemberById(id) {
   return getAllMembers().find(m => String(m.id) === String(id)) || null;
 }
 
-export function saveMember(member) {
+// Saves locally first (so the UI updates immediately and nothing is lost if
+// the network is down), then pushes to the server and waits for it to land
+// before resolving — a refresh right after saving must not race a still-
+// in-flight write. Resolves to { member, synced }: synced is false if the
+// record only made it to the local cache, so callers can warn the admin
+// instead of silently pretending the save reached the server.
+export async function saveMember(member) {
   const id = Number(member.id);
+  let isUpdate = false;
   if (!isServerConnected() && id && id <= 60) {
     // Demo mode sample member — persist as an override
     const overrides = getOverrides();
@@ -114,12 +139,24 @@ export function saveMember(member) {
   } else {
     const stored = getStoredMembers();
     const idx = stored.findIndex(m => String(m.id) === String(member.id));
+    isUpdate = idx >= 0;
     if (idx >= 0) stored[idx] = { ...stored[idx], ...member };
     else stored.push(member);
     localStorage.setItem('appMembers', JSON.stringify(stored));
   }
-  pushToServer('members', member);
-  return member;
+
+  const serverCopy = await pushToServer('members', member, isUpdate);
+  if (!serverCopy) return { member, synced: false };
+
+  // Reconcile the local cache with what the server actually stored (e.g.
+  // the server-assigned mva_id on create) so the UI reflects reality.
+  const reconciled = { ...member, ...serverCopy, id: member.id };
+  const stored = getStoredMembers();
+  const idx = stored.findIndex(m => String(m.id) === String(member.id));
+  if (idx >= 0) stored[idx] = reconciled;
+  else stored.push(reconciled);
+  localStorage.setItem('appMembers', JSON.stringify(stored));
+  return { member: reconciled, synced: true };
 }
 
 export function deleteMember(id) {

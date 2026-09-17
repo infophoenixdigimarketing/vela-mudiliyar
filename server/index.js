@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('./db.js');
 
 const app = express();
@@ -38,6 +39,18 @@ app.use(express.static(clientBuildPath, {
 // Unknown API routes must return JSON, never the SPA HTML.
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not found', path: req.originalUrl });
+});
+
+// Clean URLs for the public site: /about resolves to about.html, etc.,
+// so internal links (and what shows in the address bar) never need the
+// .html suffix.
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (req.path === '/' || req.path.startsWith('/admin') || req.path.startsWith('/api')) return next();
+  if (/\.[a-zA-Z0-9]+$/.test(req.path)) return next();
+  const candidate = path.join(clientBuildPath, `${req.path}.html`);
+  if (fs.existsSync(candidate)) return res.sendFile(candidate);
+  next();
 });
 
 // SPA fallback - serve the admin app's index.html under /admin,
