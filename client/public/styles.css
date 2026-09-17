@@ -378,20 +378,20 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
 
 /* ============================= INTERIOR PAGE BANNER ============================= */
 .page-hero{
-  position:relative; overflow:hidden; padding: 56px 0 48px; color: var(--paper);
+  position:relative; overflow:hidden; padding: 34px 0 28px; color: var(--paper);
   background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%);
 }
 .page-hero::after{
   content:''; position:absolute; left:0; right:0; bottom:0; height:5px;
   background: linear-gradient(90deg, var(--gold) 0%, transparent 75%);
 }
-.breadcrumb{ font-size:.82rem; margin-bottom:16px; color:#AECBEF; }
+.breadcrumb{ font-size:.78rem; margin-bottom:10px; color:#AECBEF; }
 .breadcrumb a{ color:#CFE4FA; text-decoration:none; }
 .breadcrumb a:hover{ text-decoration:underline; }
 .breadcrumb span{ opacity:.7; margin:0 6px; }
 .page-hero .kicker{ color: var(--gold-light); }
-.page-hero h1{ color:#fff; font-size: clamp(1.9rem, 4vw, 2.9rem); margin-bottom:12px; }
-.page-hero p{ color:#DCEAFB; max-width:62ch; margin:0; font-size:1.02rem; }
+.page-hero h1{ color:#fff; font-size: clamp(1.5rem, 3vw, 2.1rem); margin-bottom:8px; }
+.page-hero p{ color:#DCEAFB; max-width:62ch; margin:0; font-size:.94rem; }
 
 /* ============================= HOME: QUICK LINKS HUB ============================= */
 .home-teaser{ padding: 8px 0 0; }
@@ -469,7 +469,7 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
   .gallery-grid{ grid-template-columns: repeat(2,1fr); }
   .gallery-grid img.span-2{ grid-column: span 2; grid-row: span 1; aspect-ratio: 16/9; }
   .quick-links{ grid-template-columns: 1fr; }
-  .page-hero{ padding: 40px 0 34px; }
+  .page-hero{ padding: 26px 0 22px; }
 }
 
 /* Accessibility */
