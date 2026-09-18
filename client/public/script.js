@@ -16,7 +16,7 @@ if (lifeMemberCountEl) {
 // Highlight the current page in the primary nav
 const currentPage = location.pathname.split('/').pop() || 'index.html';
 document.querySelectorAll('.site-nav a, .footer-nav a').forEach(link => {
-  const linkPage = link.getAttribute('href').split('/').pop();
+  const linkPage = link.getAttribute('href').split('/').pop() || 'index.html';
   if (linkPage === currentPage) link.classList.add('active');
 });
 
