@@ -156,8 +156,8 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
 .site-header.is-scrolled .header-inner{ padding: 10px 28px; }
 
 .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
-.brand-mark{ width:56px; height:56px; object-fit:contain; transition: transform .45s var(--ease), width .3s var(--ease), height .3s var(--ease); }
-.site-header.is-scrolled .brand-mark{ width:44px; height:44px; }
+.brand-mark{ width:76px; height:76px; object-fit:contain; transition: transform .45s var(--ease), width .3s var(--ease), height .3s var(--ease); }
+.site-header.is-scrolled .brand-mark{ width:56px; height:56px; }
 .brand:hover .brand-mark{ transform: rotate(-8deg) scale(1.1); }
 .brand-text{
   font-family: var(--display); font-weight:600; font-size:1.02rem;
