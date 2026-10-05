@@ -14,6 +14,7 @@ export default function Layout({ user, onLogout, children }) {
     { path: '/members', label: 'Members', icon: '👥' },
     { path: '/cards', label: 'ID Cards', icon: '🎫' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
+    { path: '/site-content', label: 'Brochure Website', icon: '🌐' },
     { path: '/renewals', label: 'Renewals', icon: '🔄' },
     { path: '/receipts', label: 'Receipts', icon: '🧾' },
     { path: '/families', label: 'Families', icon: '👨‍👩‍👧' },

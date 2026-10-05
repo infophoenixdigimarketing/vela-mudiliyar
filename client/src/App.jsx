@@ -8,6 +8,7 @@ import MemberView from './pages/MemberView';
 import IdCards from './pages/IdCards';
 import Announcements from './pages/Announcements';
 import AdminSettings from './pages/AdminSettings';
+import SiteContent from './pages/SiteContent';
 import Renewals from './pages/Renewals';
 import Receipts from './pages/Receipts';
 import Families from './pages/Families';
@@ -74,6 +75,7 @@ function App() {
             <Route path="/families" element={<Families />} />
             <Route path="/departures" element={<Departures />} />
             <Route path="/history" element={<PrintHistory />} />
+            <Route path="/site-content" element={<SiteContent />} />
             <Route path="/settings" element={<AdminSettings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

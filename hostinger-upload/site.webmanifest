@@ -1,0 +1,16 @@
+{
+  "name": "Mysore Vellala Association",
+  "short_name": "MVA",
+  "description": "Mysore Vellala Association (R.) \u2014 Mudaliar Sangam, Mysuru",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F5EFE1",
+  "theme_color": "#6B2119",
+  "icons": [
+    {
+      "src": "mva-assets/logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

@@ -45,6 +45,12 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS users (
   role VARCHAR(20) NOT NULL DEFAULT 'operator'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+$pdo->exec("CREATE TABLE IF NOT EXISTS site_content (
+  page VARCHAR(50) PRIMARY KEY,
+  data LONGTEXT NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 foreach (['members', 'receipts', 'departures', 'history'] as $t) {
   $pdo->exec("CREATE TABLE IF NOT EXISTS $t (
     id BIGINT PRIMARY KEY,
@@ -85,13 +91,69 @@ function verifyToken($secret) {
   return $data;
 }
 
-// ---------- Routing ----------
+// ---------- Brochure website content ----------
+function site_text($value, $max = 6000) {
+  return is_string($value) ? mb_substr(trim($value), 0, $max) : '';
+}
+
+function clean_site_about($body) {
+  $input = is_array($body['sections'] ?? null) ? $body['sections'] : [];
+  if (count($input) > 20) fail('Up to 20 sections allowed');
+  $sections = [];
+  foreach ($input as $raw) {
+    $raw = is_array($raw) ? $raw : [];
+    $s = [
+      'image_url' => site_text($raw['image_url'] ?? '', 300),
+      'image_alt' => site_text($raw['image_alt'] ?? '', 300),
+      'caption' => site_text($raw['caption'] ?? '', 300),
+      'description' => site_text($raw['description'] ?? ''),
+    ];
+    if ($s['image_url'] !== '' || $s['description'] !== '') $sections[] = $s;
+  }
+  if (!$sections) fail('Add at least one section with a photo or description');
+  return ['sections' => $sections];
+}
+
+function clean_site_leaders($body) {
+  $input = is_array($body['leaders'] ?? null) ? $body['leaders'] : [];
+  if (count($input) > 60) fail('Up to 60 leaders allowed');
+  $leaders = [];
+  foreach ($input as $raw) {
+    $raw = is_array($raw) ? $raw : [];
+    $l = [
+      'name' => site_text($raw['name'] ?? '', 200),
+      'designation' => site_text($raw['designation'] ?? '', 200),
+      'photo_url' => site_text($raw['photo_url'] ?? '', 300),
+      'phone' => site_text($raw['phone'] ?? '', 40),
+      'email' => site_text($raw['email'] ?? '', 200),
+      'highlight' => ($raw['highlight'] ?? false) === true,
+    ];
+    if ($l['name'] !== '') $leaders[] = $l;
+  }
+  if (!$leaders) fail('Add at least one leader with a name');
+  return [
+    'heading' => site_text($body['heading'] ?? '', 200),
+    'subtitle' => site_text($body['subtitle'] ?? '', 300),
+    'leaders' => $leaders,
+  ];
+}
+
+$site_pages = ['about' => 'clean_site_about', 'leaders' => 'clean_site_leaders'];
+
+// ---------- Routing ----------// ---------- Routing ----------
 $route = trim($_GET['route'] ?? '', '/');
 $method = $_SERVER['REQUEST_METHOD'];
 $body = json_decode(file_get_contents('php://input'), true);
 
 if ($route === 'health') {
   respond(['status' => 'ok', 'time' => date('c')]);
+}
+
+if (preg_match('#^site/(about|leaders)$#', $route, $m) && $method === 'GET') {
+  $stmt = $pdo->prepare("SELECT data FROM site_content WHERE page = ?");
+  $stmt->execute([$m[1]]);
+  $row = $stmt->fetchColumn();
+  respond($row ? json_decode($row, true) : null);
 }
 
 if ($route === 'login' && $method === 'POST') {
@@ -117,6 +179,31 @@ if ($route === 'login' && $method === 'POST') {
 // Everything below requires a valid token
 $auth = verifyToken($config['secret']);
 if (!$auth) fail('Unauthorized — please log in', 401);
+
+if (preg_match('#^site/(about|leaders)$#', $route, $m) && $method === 'PUT') {
+  $cleaner = $site_pages[$m[1]];
+  $content = $cleaner(is_array($body) ? $body : []);
+  $content['updated_at'] = date('c');
+  $pdo->prepare("INSERT INTO site_content (page, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)")
+      ->execute([$m[1], json_encode($content, JSON_UNESCAPED_UNICODE)]);
+  respond($content);
+}
+
+if ($route === 'site/upload-image' && $method === 'POST') {
+  if (!preg_match('#^data:image/(png|jpe?g|webp);base64,(.+)$#i', $body['imageDataUrl'] ?? '', $m)) {
+    fail('Upload a PNG, JPG or WebP image');
+  }
+  $bytes = base64_decode($m[2], true);
+  if ($bytes === false) fail('Invalid image data');
+  if (strlen($bytes) > 8 * 1024 * 1024) fail('Image must be 8 MB or smaller');
+  $type = strtolower($m[1]);
+  $ext = $type === 'jpeg' ? 'jpg' : $type;
+  $dir = __DIR__ . '/../uploads/site';
+  if (!is_dir($dir)) mkdir($dir, 0755, true);
+  $name = time() . '-' . bin2hex(random_bytes(3)) . '.' . $ext;
+  file_put_contents("$dir/$name", $bytes);
+  respond(['url' => "/uploads/site/$name"]);
+}
 
 if ($route === 'me') {
   respond(['username' => $auth['u'], 'full_name' => $auth['n'], 'role' => $auth['r']]);
