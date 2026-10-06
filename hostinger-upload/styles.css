@@ -148,6 +148,9 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
   box-shadow: 0 12px 30px -22px rgba(74,7,24,0.5);
 }
 .site-header.is-scrolled::after{ opacity:1; transform: scaleX(1); }
+.header-top{ background: var(--primary-dark); color: var(--gold-bright); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; font-weight:700; }
+.header-top-inner{ display:flex; justify-content:space-between; align-items:center; padding: 6px 28px; }
+.site-header.is-scrolled .header-top{ display:none; }
 .header-inner{
   display:flex; align-items:center; justify-content:space-between;
   padding: 16px 28px;
@@ -161,8 +164,9 @@ p{ margin: 0 0 1rem; color: var(--ink-soft); max-width: 62ch; }
 .brand:hover .brand-mark{ transform: rotate(-8deg) scale(1.1); }
 .brand-text{
   font-family: var(--display); font-weight:600; font-size:1.02rem;
-  letter-spacing:.01em; color: var(--gold);
+  letter-spacing:.01em; color: var(--gold); line-height:1.25;
 }
+.brand-sub{ display:block; font-family: var(--body); font-weight:600; font-size:.72rem; letter-spacing:.06em; color: var(--ink-soft); }
 
 .site-nav{ display:flex; flex-wrap:wrap; gap: 4px; row-gap:6px; justify-content:flex-end; }
 .site-nav a{
