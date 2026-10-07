@@ -17,11 +17,34 @@ const EASE = [0.16, 1, 0.3, 1];
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Sticky header shrink/shadow state — pure DOM, no animation library needed.
+// Uses two different thresholds (enter above 80px, leave below 20px) instead
+// of one boundary: toggling the header's height moves the page content,
+// which can nudge window.scrollY back across a single threshold and flip
+// the class again on every tiny scroll — a feedback loop that reads as the
+// header "shivering". The gap between the two numbers absorbs that nudge.
 const header = document.querySelector('.site-header');
 if (header) {
-  const setScrolled = () => header.classList.toggle('is-scrolled', window.scrollY > 12);
-  setScrolled();
-  window.addEventListener('scroll', setScrolled, { passive: true });
+  let scrollTicking = false;
+  let isScrolled = false;
+  const applyScrolled = () => {
+    const y = window.scrollY;
+    const next = y > 80 ? true : y < 20 ? false : isScrolled;
+    // Only touch the class (and retrigger its CSS transition) when the
+    // state actually changes — classList.add/remove rewrite the attribute
+    // even as a no-op, which is wasted work on every scroll frame.
+    if (next !== isScrolled) {
+      header.classList.toggle('is-scrolled', next);
+      isScrolled = next;
+    }
+    scrollTicking = false;
+  };
+  const onScroll = () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(applyScrolled);
+  };
+  applyScrolled();
+  window.addEventListener('scroll', onScroll, { passive: true });
 }
 
 if (!reduceMotion) {

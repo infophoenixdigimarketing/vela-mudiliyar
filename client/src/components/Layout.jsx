@@ -33,7 +33,7 @@ export default function Layout({ user, onLogout, children }) {
   const canEdit = user?.role === 'superadmin' || user?.role === 'operator';
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-cream">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'w-56' : 'w-20'} bg-navy-deep text-white flex flex-col transition-all duration-300`}>
         <div className="p-4 border-b border-navy/30">

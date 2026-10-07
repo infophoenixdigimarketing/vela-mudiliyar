@@ -98,8 +98,8 @@ export default function Dashboard() {
         <StatTile title="Total Members" value={stats.total} color="bg-navy" path="/members" />
         <StatTile title="Active Members" value={stats.active} color="bg-green" path="/members?status=active" />
         <StatTile title="Pending Applications" value={stats.pending} color="bg-saffron" path="/members?status=pending" />
-        <StatTile title="Life Members" value={stats.lifeMembers} color="bg-blue-500" path="/members?membership_type=life" />
-        <StatTile title="Annual Members" value={stats.annualMembers} color="bg-blue-600" path="/members?membership_type=annual" />
+        <StatTile title="Life Members" value={stats.lifeMembers} color="bg-[#1F6F5C]" path="/members?membership_type=life" />
+        <StatTile title="Annual Members" value={stats.annualMembers} color="bg-[#B8552F]" path="/members?membership_type=annual" />
         <StatTile title="Departed" value={stats.departed} color="bg-gray-500" path="/members?status=departed" />
       </div>
 
@@ -187,7 +187,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div
-                        className="h-full bg-blue-500"
+                        className="h-full bg-[#1F6F5C]"
                         style={{ width: `${ageTotal ? (count / ageTotal) * 100 : 0}%` }}
                       />
                     </div>
@@ -238,7 +238,7 @@ export default function Dashboard() {
           </Link>
           <Link
             to="/cards"
-            className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:opacity-90 transition text-center font-medium"
+            className="bg-[#B8552F] text-white py-3 px-4 rounded-lg hover:opacity-90 transition text-center font-medium"
           >
             Generate ID Cards
           </Link>
