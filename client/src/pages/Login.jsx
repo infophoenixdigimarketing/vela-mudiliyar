@@ -53,69 +53,103 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-navy to-navy-deep flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-navy mb-2">Mudaliar Sangham</h1>
-          <p className="text-gray-600">Mysore Vellala Association</p>
-          <p className="text-sm text-gray-500 mt-2">Membership Management System</p>
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage:
+          "linear-gradient(120deg, rgba(58,6,19,.93) 0%, rgba(74,9,25,.85) 45%, rgba(122,12,40,.65) 100%), url('/mva-assets/building.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center 65%',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Brand stripe, matching the public site's header accent */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-saffron via-navy to-[#1F6F5C]" />
+
+      <div className="w-full max-w-md relative">
+        <div
+          className="backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/40"
+          style={{ backgroundColor: 'rgba(255,255,255,0.97)' }}
+        >
+          <div className="text-center mb-8">
+            <img
+              src="/mva-assets/logo.png"
+              alt="Mysore Vellala Association seal"
+              className="w-20 h-20 mx-auto mb-4 drop-shadow-md"
+            />
+            <p className="text-xs font-bold tracking-[0.2em] text-saffron uppercase mb-2">
+              Estd. 1927 &middot; Mysuru
+            </p>
+            <h1
+              className="font-bold text-[#8A6A14] mb-1 whitespace-nowrap"
+              style={{ fontSize: 'clamp(0.68rem, 4vw, 1.375rem)' }}
+            >
+              Mysore Vellala Association (R.)
+            </h1>
+            <p className="text-gray-600">Mudaliar Sangham</p>
+            <p className="text-sm text-gray-500 mt-2">Membership Management System</p>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="admin"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-navy text-white font-medium py-2.5 rounded-lg hover:bg-navy-deep transition disabled:opacity-50 shadow-lg shadow-navy/30"
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <p className="text-sm text-gray-600 text-center mb-4 font-semibold">Login Accounts</p>
+            <div className="space-y-3 text-sm">
+              <div className="bg-card-blue p-3 rounded-lg">
+                <p className="font-medium text-navy">Admin</p>
+                <p className="text-gray-600">admin / admin123</p>
+              </div>
+              <div className="bg-card-blue p-3 rounded-lg">
+                <p className="font-medium text-navy">Operator</p>
+                <p className="text-gray-600">operator / oper123</p>
+              </div>
+              <div className="bg-card-blue p-3 rounded-lg">
+                <p className="font-medium text-navy">Viewer</p>
+                <p className="text-gray-600">viewer / view123</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-navy text-white font-medium py-2 rounded-lg hover:bg-navy-deep transition disabled:opacity-50"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600 text-center mb-4 font-semibold">Login Accounts</p>
-          <div className="space-y-3 text-sm">
-            <div className="bg-blue-50 p-3 rounded">
-              <p className="font-medium text-navy">Admin</p>
-              <p className="text-gray-600">admin / admin123</p>
-            </div>
-            <div className="bg-blue-50 p-3 rounded">
-              <p className="font-medium text-navy">Operator</p>
-              <p className="text-gray-600">operator / oper123</p>
-            </div>
-            <div className="bg-blue-50 p-3 rounded">
-              <p className="font-medium text-navy">Viewer</p>
-              <p className="text-gray-600">viewer / view123</p>
-            </div>
-          </div>
-        </div>
+        <p className="text-center text-white/70 text-xs mt-6">
+          #76, Manasara Road, Indiranagar, Ittigegud, Mysuru 570010
+        </p>
       </div>
     </div>
   );

@@ -3,6 +3,19 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Edit, Eye, Download, Upload } from 'lucide-react';
 import { getAllMembers, canEdit } from '../lib/memberStore';
 
+// Same age calculation the Dashboard uses to build its Age Group Distribution,
+// kept here too so a click-through from there filters the exact same people.
+function getAge(dob) {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d)) return null;
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const monthDiff = today.getMonth() - d.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < d.getDate())) age--;
+  return age;
+}
+
 export default function MemberList() {
   const [members, setMembers] = useState([]);
   const [total, setTotal] = useState(0);
@@ -19,6 +32,8 @@ export default function MemberList() {
     membership_type: searchParams.get('membership_type'),
     blood_group: searchParams.get('blood_group'),
     area: searchParams.get('area'),
+    ageMin: searchParams.get('ageMin'),
+    ageMax: searchParams.get('ageMax'),
   };
 
   useEffect(() => {
@@ -56,6 +71,15 @@ export default function MemberList() {
       }
       if (filters.area) {
         filtered = filtered.filter(m => m.area === filters.area);
+      }
+      if (filters.ageMin || filters.ageMax) {
+        filtered = filtered.filter(m => {
+          const age = getAge(m.dob);
+          if (age === null) return false;
+          if (filters.ageMin && age < Number(filters.ageMin)) return false;
+          if (filters.ageMax && age >= Number(filters.ageMax)) return false;
+          return true;
+        });
       }
 
       // Sort
@@ -290,6 +314,23 @@ MVA-ID-005,Srinivas Reddy,S/O Hari Reddy,"654 New Bamboo Bazaar, Mysore 570021",
               {filters.membership_type && <FilterChip label="Type" value={filters.membership_type} />}
               {filters.blood_group && <FilterChip label="Blood" value={filters.blood_group} />}
               {filters.area && <FilterChip label="Area" value={filters.area} />}
+              {(filters.ageMin || filters.ageMax) && (
+                <span className="inline-flex items-center gap-2 bg-navy text-white px-3 py-1 rounded-full text-sm">
+                  Age: <strong>{filters.ageMax ? `${filters.ageMin}–${filters.ageMax}` : `${filters.ageMin}+`}</strong>
+                  <button
+                    onClick={() => {
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.delete('ageMin');
+                      newParams.delete('ageMax');
+                      setSearchParams(newParams);
+                      setPage(1);
+                    }}
+                    className="hover:opacity-70"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
             </div>
             <button
               onClick={clearFilters}

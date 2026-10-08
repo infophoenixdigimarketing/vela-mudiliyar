@@ -1,7 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Image as ImageIcon, MessageCircle, MessageSquare, Send } from 'lucide-react';
+import { Search, Image as ImageIcon, MessageCircle, MessageSquare, Send, Cake } from 'lucide-react';
 import { getAllMembers, waLink } from '../lib/memberStore';
 import { uploadAnnouncementImage, sendSmsAnnouncement } from '../lib/announcements';
+
+const DEFAULT_BIRTHDAY_MESSAGE =
+  'Happy Birthday from all of us at Mysore Vellala Association (Mudaliar Sangam)! ' +
+  'Wishing you a wonderful year ahead filled with health and happiness. 🎂';
+
+// Parses "YYYY-MM-DD" without timezone surprises (new Date('YYYY-MM-DD') is UTC midnight,
+// which can land on the wrong local day near midnight).
+function parseDob(dob) {
+  if (!dob) return null;
+  const [y, m, d] = dob.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return { year: y, month: m, day: d };
+}
 
 export default function Announcements() {
   const [members, setMembers] = useState([]);
@@ -20,9 +33,60 @@ export default function Announcements() {
 
   const [waQueue, setWaQueue] = useState(null); // { members: [...], sentIds: [] }
 
+  // Today's Birthdays
+  const [birthdayMessage, setBirthdayMessage] = useState(DEFAULT_BIRTHDAY_MESSAGE);
+  const [bdaySending, setBdaySending] = useState(false);
+  const [bdayResult, setBdayResult] = useState(null);
+  const [bdayError, setBdayError] = useState('');
+  const [bdayWaQueue, setBdayWaQueue] = useState(null); // { members: [...], sentIds: [] }
+
   useEffect(() => {
     setMembers(getAllMembers());
   }, []);
+
+  const todaysBirthdays = useMemo(() => {
+    const today = new Date();
+    const todayMonth = today.getMonth() + 1;
+    const todayDay = today.getDate();
+    return members
+      .filter(m => m.status !== 'departed')
+      .map(m => ({ member: m, dob: parseDob(m.dob) }))
+      .filter(({ dob }) => dob && dob.month === todayMonth && dob.day === todayDay)
+      .map(({ member, dob }) => ({
+        ...member,
+        turningAge: dob.year > 1900 ? today.getFullYear() - dob.year : null,
+      }));
+  }, [members]);
+
+  const bdayWaPending = bdayWaQueue ? bdayWaQueue.members.filter(m => !bdayWaQueue.sentIds.includes(m.id)) : [];
+
+  const sendNextBirthdayWhatsapp = () => {
+    const next = bdayWaPending[0];
+    if (!next) return;
+    window.open(waLink(next.whatsapp || next.phone, birthdayMessage), '_blank');
+    setBdayWaQueue(prev => ({ ...prev, sentIds: [...prev.sentIds, next.id] }));
+  };
+
+  const sendBirthdaySms = async () => {
+    setBdayError('');
+    setBdayResult(null);
+    if (!birthdayMessage.trim()) {
+      setBdayError('Write a birthday message first.');
+      return;
+    }
+    setBdaySending(true);
+    try {
+      const result = await sendSmsAnnouncement({
+        memberIds: todaysBirthdays.map(m => m.id),
+        message: birthdayMessage,
+      });
+      setBdayResult(result);
+    } catch (err) {
+      setBdayError('SMS send failed: ' + err.message + ' — make sure the server is running and a gateway is configured in Settings.');
+    } finally {
+      setBdaySending(false);
+    }
+  };
 
   const areas = useMemo(
     () => [...new Set(members.map(m => m.area).filter(Boolean))].sort(),
@@ -125,6 +189,102 @@ export default function Announcements() {
       <div>
         <h1 className="text-3xl font-bold text-navy">Announcements</h1>
         <p className="text-gray-600 mt-1">Send a message to selected members via SMS and/or WhatsApp.</p>
+      </div>
+
+      {/* Today's Birthdays — picked up automatically from each member's date of birth */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Cake size={22} className="text-saffron" />
+          <h2 className="text-lg font-bold text-navy">Today's Birthdays</h2>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })} — found automatically from members' date of birth.
+        </p>
+
+        {todaysBirthdays.length === 0 ? (
+          <p className="text-sm text-gray-500">No members have a birthday today.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="divide-y divide-gray-100 border rounded-lg">
+              {todaysBirthdays.map(m => (
+                <div key={m.id} className="flex items-center justify-between px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {m.full_name}
+                      {m.turningAge && <span className="text-gray-500 font-normal"> · turning {m.turningAge}</span>}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono">{m.mva_id} · {m.phone}</p>
+                  </div>
+                  <a
+                    href={waLink(m.whatsapp || m.phone, birthdayMessage)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-medium text-[#25D366] hover:underline flex-none ml-3"
+                  >
+                    <MessageCircle size={14} /> WhatsApp
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Birthday message</label>
+              <textarea
+                value={birthdayMessage}
+                onChange={(e) => setBirthdayMessage(e.target.value)}
+                rows="2"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy text-sm"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={sendBirthdaySms}
+                disabled={bdaySending}
+                className="flex items-center gap-2 bg-navy text-white px-5 py-2 rounded-lg hover:bg-navy-deep transition font-medium text-sm disabled:opacity-50"
+              >
+                <MessageSquare size={16} /> {bdaySending ? 'Sending SMS...' : `Send SMS to all ${todaysBirthdays.length}`}
+              </button>
+              <button
+                onClick={() => setBdayWaQueue({ members: todaysBirthdays, sentIds: [] })}
+                className="flex items-center gap-2 bg-[#25D366] text-white px-5 py-2 rounded-lg hover:opacity-90 transition font-medium text-sm"
+              >
+                <MessageCircle size={16} /> Send WhatsApp one by one
+              </button>
+            </div>
+
+            {bdayError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{bdayError}</div>
+            )}
+            {bdayResult && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
+                SMS: sent {bdayResult.sentCount} of {bdayResult.total} · {bdayResult.creditsRemaining} credits remaining
+              </div>
+            )}
+            {bdayWaQueue && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+                <p className="text-sm font-semibold text-green-900">
+                  WhatsApp: {bdayWaQueue.sentIds.length} of {bdayWaQueue.members.length} opened
+                </p>
+                {bdayWaPending.length > 0 ? (
+                  <button
+                    onClick={sendNextBirthdayWhatsapp}
+                    className="flex items-center gap-2 bg-[#25D366] text-white px-5 py-2 rounded-lg hover:opacity-90 transition font-medium text-sm"
+                  >
+                    <MessageCircle size={16} /> Send Next ({bdayWaPending.length} left) — Next: {bdayWaPending[0].full_name}
+                  </button>
+                ) : (
+                  <p className="text-xs text-green-800">All WhatsApp messages have been opened.</p>
+                )}
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500">
+              SMS sends immediately to everyone above through the gateway configured in Settings.
+              WhatsApp opens one pre-filled chat at a time — press "Send" in each window, same as the announcement composer below.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

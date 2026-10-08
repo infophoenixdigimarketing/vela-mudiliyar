@@ -12,10 +12,11 @@ export default {
         navy: '#7A0C28',
         'navy-deep': '#4A0718',
         'card-blue': '#F5DCE0',
-        cream: '#FAF6F1',
+        cream: '#F5DFBC',
         green: '#157347',
         saffron: '#B87A3D',
         ink: '#1a1a1a',
+        white: '#FAEBD2',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

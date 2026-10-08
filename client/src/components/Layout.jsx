@@ -1,6 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, LogOut } from 'lucide-react';
+import {
+  Menu, LogOut, LayoutDashboard, Users, CreditCard, Megaphone,
+  Globe, RefreshCw, Receipt, UsersRound, Bird, Printer, Settings as SettingsIcon,
+} from 'lucide-react';
 import { useState } from 'react';
+
+const GOLD = '#E8C874';
 
 export default function Layout({ user, onLogout, children }) {
   const navigate = useNavigate();
@@ -10,17 +15,17 @@ export default function Layout({ user, onLogout, children }) {
   );
 
   const menuItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/members', label: 'Members', icon: '👥' },
-    { path: '/cards', label: 'ID Cards', icon: '🎫' },
-    { path: '/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/site-content', label: 'Brochure Website', icon: '🌐' },
-    { path: '/renewals', label: 'Renewals', icon: '🔄' },
-    { path: '/receipts', label: 'Receipts', icon: '🧾' },
-    { path: '/families', label: 'Families', icon: '👨‍👩‍👧' },
-    { path: '/departures', label: 'Departures', icon: '🕊️' },
-    { path: '/history', label: 'Print History', icon: '🖨️' },
-    ...(user?.role === 'superadmin' ? [{ path: '/settings', label: 'Settings', icon: '⚙️' }] : []),
+    { path: '/', label: 'Dashboard', Icon: LayoutDashboard },
+    { path: '/members', label: 'Members', Icon: Users },
+    { path: '/cards', label: 'ID Cards', Icon: CreditCard },
+    { path: '/announcements', label: 'Announcements', Icon: Megaphone },
+    { path: '/site-content', label: 'Brochure Website', Icon: Globe },
+    { path: '/renewals', label: 'Renewals', Icon: RefreshCw },
+    { path: '/receipts', label: 'Receipts', Icon: Receipt },
+    { path: '/families', label: 'Families', Icon: UsersRound },
+    { path: '/departures', label: 'Departures', Icon: Bird },
+    { path: '/history', label: 'Print History', Icon: Printer },
+    ...(user?.role === 'superadmin' ? [{ path: '/settings', label: 'Settings', Icon: SettingsIcon }] : []),
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -35,7 +40,7 @@ export default function Layout({ user, onLogout, children }) {
   return (
     <div className="flex h-screen bg-cream">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-56' : 'w-20'} bg-navy-deep text-white flex flex-col transition-all duration-300`}>
+      <div className={`${sidebarOpen ? 'w-56' : 'w-20'} bg-navy-deep flex flex-col transition-all duration-300`} style={{ color: GOLD }}>
         <div className="p-4 border-b border-navy/30">
           <div className="flex items-center justify-between">
             {sidebarOpen && <h1 className="font-bold text-sm">MVA</h1>}
@@ -46,18 +51,17 @@ export default function Layout({ user, onLogout, children }) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-          {menuItems.map(item => (
+          {menuItems.map(({ path, label, Icon }) => (
             <Link
-              key={item.path}
-              to={item.path}
+              key={path}
+              to={path}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                isActive(item.path)
-                  ? 'bg-navy text-white'
-                  : 'hover:bg-navy/30 text-gray-300'
+                isActive(path) ? 'bg-navy' : 'hover:bg-navy/30'
               }`}
+              style={{ color: GOLD, opacity: isActive(path) ? 1 : 0.8 }}
             >
-              <span className="text-xl">{item.icon}</span>
-              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+              <Icon size={20} className="flex-none" />
+              {sidebarOpen && <span className="text-sm font-medium">{label}</span>}
             </Link>
           ))}
         </nav>
@@ -65,13 +69,14 @@ export default function Layout({ user, onLogout, children }) {
         <div className="p-4 border-t border-navy/30 space-y-3">
           {sidebarOpen && (
             <>
-              <div className="text-xs text-gray-400 px-2">
-                <p className="font-semibold text-gray-300">{user?.full_name}</p>
-                <p className="capitalize text-gray-500">{user?.role}</p>
+              <div className="text-xs px-2" style={{ color: GOLD, opacity: 0.85 }}>
+                <p className="font-semibold">{user?.full_name}</p>
+                <p className="capitalize" style={{ opacity: 0.75 }}>{user?.role}</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-navy/30 rounded-lg transition text-gray-300"
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-navy/30 rounded-lg transition"
+                style={{ color: GOLD, opacity: 0.85 }}
               >
                 <LogOut size={16} />
                 Logout
@@ -84,9 +89,20 @@ export default function Layout({ user, onLogout, children }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 shadow-sm">
-          <h2 className="text-xl md:text-2xl font-bold text-navy">Mysore Vellala Association®</h2>
-          <p className="text-xs md:text-sm text-gray-600">Membership Management System</p>
+        <header
+          className="border-b border-[#E8D2A8] px-4 md:px-8 py-4 flex items-center gap-3 relative z-10"
+          style={{ backgroundColor: '#FAEBD2' }}
+        >
+          <img src="/mva-assets/logo.png" alt="Mysore Vellala Association seal" className="w-11 h-11 md:w-14 md:h-14 object-contain flex-none" />
+          <div>
+            <h2
+              className="text-lg md:text-2xl font-bold text-[#8A6A14] leading-tight"
+              style={{ fontFamily: "'Fraunces', serif" }}
+            >
+              Mysore Vellala Association (R.)
+            </h2>
+            <p className="text-xs md:text-sm text-gray-600">(Mudaliar Sangam)</p>
+          </div>
         </header>
 
         {/* Content */}

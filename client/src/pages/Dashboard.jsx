@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllMembers } from '../lib/memberStore';
 
+// Matches the age bands computed below (18-30, 30-60, 60+) — ageMax is
+// exclusive, so "30 to 60" and "60 and above" don't overlap on age 60.
+const AGE_RANGE_QUERY = {
+  '18 to 30': 'ageMin=18&ageMax=30',
+  '30 to 60': 'ageMin=30&ageMax=60',
+  '60 and above': 'ageMin=60',
+};
+
 export default function Dashboard() {
   const [stats, setStats] = useState({
     total: 0,
@@ -156,6 +164,9 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-navy mb-4">Blood Group Distribution</h3>
           <div className="space-y-3">
+            {Object.keys(bloodGroups).length === 0 && (
+              <p className="text-sm text-gray-500">No blood group data yet.</p>
+            )}
             {Object.entries(bloodGroups)
               .sort((a, b) => b[1] - a[1])
               .map(([bg, count]) => (
@@ -182,7 +193,11 @@ export default function Dashboard() {
             {Object.entries(ageGroups).map(([range, count]) => {
               const ageTotal = Object.values(ageGroups).reduce((a, b) => a + b, 0);
               return (
-                <div key={range} className="flex items-center justify-between">
+                <Link
+                  key={range}
+                  to={`/members?${AGE_RANGE_QUERY[range]}`}
+                  className="flex items-center justify-between hover:bg-card-blue p-2 -mx-2 rounded transition"
+                >
                   <span className="font-medium">{range}</span>
                   <div className="flex items-center gap-3">
                     <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -193,7 +208,7 @@ export default function Dashboard() {
                     </div>
                     <span className="text-sm text-gray-600 w-8">{count}</span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -203,6 +218,9 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-navy mb-4">Members by Area</h3>
           <div className="space-y-3">
+            {Object.keys(areas).length === 0 && (
+              <p className="text-sm text-gray-500">No area data yet.</p>
+            )}
             {Object.entries(areas)
               .sort((a, b) => b[1] - a[1])
               .slice(0, 8)

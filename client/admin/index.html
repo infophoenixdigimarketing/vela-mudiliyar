@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MVA Membership System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;600;700;800&family=Noto+Sans+Kannada:wght@600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;600;700;800&family=Noto+Sans+Kannada:wght@600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       // Matches the public site's royal maroon & gold palette
@@ -16,10 +16,14 @@
               navy: '#7A0C28',
               'navy-deep': '#4A0718',
               'card-blue': '#F5DCE0',
-              cream: '#FAF6F1',
+              cream: '#F5DFBC',
               green: '#157347',
               saffron: '#B87A3D',
               ink: '#1a1a1a',
+              // Overrides Tailwind's default white everywhere bg-white/text-white/
+              // border-white are used (cards, buttons, tables) with the header's
+              // cream tone, so there's no pure-white left in the admin app.
+              white: '#FAEBD2',
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
