@@ -329,6 +329,19 @@ export default function MemberForm() {
                 {areas.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
+              <input
+                type="text"
+                name="pincode"
+                value={form.pincode}
+                onChange={handleChange}
+                inputMode="numeric"
+                maxLength="6"
+                placeholder="570010"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllMembers } from '../lib/memberStore';
 
-// Matches the age bands computed below (18-30, 30-60, 60+) — ageMax is
-// exclusive, so "30 to 60" and "60 and above" don't overlap on age 60.
+// Same 8 standard groups offered in the Add Member form — always shown on the
+// dashboard, even at 0, so the distribution isn't missing types with nobody in them.
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+// Matches the age bands computed below — ageMax is exclusive, so adjacent
+// bands (e.g. "25 to 35" and "35 to 50") don't overlap on the boundary age.
 const AGE_RANGE_QUERY = {
-  '18 to 30': 'ageMin=18&ageMax=30',
-  '30 to 60': 'ageMin=30&ageMax=60',
+  '18 to 25': 'ageMin=18&ageMax=25',
+  '25 to 35': 'ageMin=25&ageMax=35',
+  '35 to 50': 'ageMin=35&ageMax=50',
+  '50 to 60': 'ageMin=50&ageMax=60',
   '60 and above': 'ageMin=60',
 };
 
@@ -19,9 +25,11 @@ export default function Dashboard() {
     lifeMembers: 0,
     annualMembers: 0
   });
-  const [bloodGroups, setBloodGroups] = useState({});
-  const [ageGroups, setAgeGroups] = useState({ '18 to 30': 0, '30 to 60': 0, '60 and above': 0 });
-  const [areas, setAreas] = useState({});
+  const [bloodGroups, setBloodGroups] = useState(Object.fromEntries(BLOOD_GROUPS.map(g => [g, 0])));
+  const [ageGroups, setAgeGroups] = useState({
+    '18 to 25': 0, '25 to 35': 0, '35 to 50': 0, '50 to 60': 0, '60 and above': 0,
+  });
+  const [pincodes, setPincodes] = useState({});
   const [cardStats, setCardStats] = useState({ draft: 0, sent: 0, approved: 0 });
   const [recentMembers, setRecentMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,13 +47,13 @@ export default function Dashboard() {
     };
     setStats(statsData);
 
-    const bg = {};
+    const bg = Object.fromEntries(BLOOD_GROUPS.map(g => [g, 0]));
     members.forEach(m => {
       if (m.blood_group) bg[m.blood_group] = (bg[m.blood_group] || 0) + 1;
     });
     setBloodGroups(bg);
 
-    const ag = { '18 to 30': 0, '30 to 60': 0, '60 and above': 0 };
+    const ag = { '18 to 25': 0, '25 to 35': 0, '35 to 50': 0, '50 to 60': 0, '60 and above': 0 };
     members.forEach(m => {
       if (!m.dob) return;
       const dob = new Date(m.dob);
@@ -56,17 +64,19 @@ export default function Dashboard() {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
         age--;
       }
-      if (age >= 18 && age < 30) ag['18 to 30']++;
-      else if (age >= 30 && age < 60) ag['30 to 60']++;
+      if (age >= 18 && age < 25) ag['18 to 25']++;
+      else if (age >= 25 && age < 35) ag['25 to 35']++;
+      else if (age >= 35 && age < 50) ag['35 to 50']++;
+      else if (age >= 50 && age < 60) ag['50 to 60']++;
       else if (age >= 60) ag['60 and above']++;
     });
     setAgeGroups(ag);
 
-    const ar = {};
+    const pc = {};
     members.forEach(m => {
-      if (m.area) ar[m.area] = (ar[m.area] || 0) + 1;
+      if (m.pincode) pc[m.pincode] = (pc[m.pincode] || 0) + 1;
     });
-    setAreas(ar);
+    setPincodes(pc);
 
     // Card approval pipeline
     setCardStats({
@@ -164,12 +174,9 @@ export default function Dashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-navy mb-4">Blood Group Distribution</h3>
           <div className="space-y-3">
-            {Object.keys(bloodGroups).length === 0 && (
-              <p className="text-sm text-gray-500">No blood group data yet.</p>
-            )}
-            {Object.entries(bloodGroups)
-              .sort((a, b) => b[1] - a[1])
-              .map(([bg, count]) => (
+            {BLOOD_GROUPS.map((bg) => {
+              const count = bloodGroups[bg] || 0;
+              return (
                 <div key={bg} className="flex items-center justify-between">
                   <span className="font-medium">{bg}</span>
                   <div className="flex items-center gap-3">
@@ -182,7 +189,8 @@ export default function Dashboard() {
                     <span className="text-sm text-gray-600 w-8">{count}</span>
                   </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
         </div>
 
@@ -216,21 +224,21 @@ export default function Dashboard() {
 
         {/* Areas */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-bold text-navy mb-4">Members by Area</h3>
+          <h3 className="text-lg font-bold text-navy mb-4">Members by Pincode</h3>
           <div className="space-y-3">
-            {Object.keys(areas).length === 0 && (
-              <p className="text-sm text-gray-500">No area data yet.</p>
+            {Object.keys(pincodes).length === 0 && (
+              <p className="text-sm text-gray-500">No pincode data yet.</p>
             )}
-            {Object.entries(areas)
+            {Object.entries(pincodes)
               .sort((a, b) => b[1] - a[1])
               .slice(0, 8)
-              .map(([area, count]) => (
+              .map(([pincode, count]) => (
                 <Link
-                  key={area}
-                  to={`/members?area=${area}`}
+                  key={pincode}
+                  to={`/members?pincode=${pincode}`}
                   className="flex items-center justify-between hover:bg-card-blue p-2 rounded transition"
                 >
-                  <span className="font-medium text-sm">{area}</span>
+                  <span className="font-medium text-sm">{pincode}</span>
                   <span className="bg-navy text-white px-3 py-1 rounded-full text-sm tabular-figures">{count}</span>
                 </Link>
               ))}

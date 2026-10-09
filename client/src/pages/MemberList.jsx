@@ -32,6 +32,7 @@ export default function MemberList() {
     membership_type: searchParams.get('membership_type'),
     blood_group: searchParams.get('blood_group'),
     area: searchParams.get('area'),
+    pincode: searchParams.get('pincode'),
     ageMin: searchParams.get('ageMin'),
     ageMax: searchParams.get('ageMax'),
   };
@@ -71,6 +72,9 @@ export default function MemberList() {
       }
       if (filters.area) {
         filtered = filtered.filter(m => m.area === filters.area);
+      }
+      if (filters.pincode) {
+        filtered = filtered.filter(m => m.pincode === filters.pincode);
       }
       if (filters.ageMin || filters.ageMax) {
         filtered = filtered.filter(m => {
@@ -314,6 +318,7 @@ MVA-ID-005,Srinivas Reddy,S/O Hari Reddy,"654 New Bamboo Bazaar, Mysore 570021",
               {filters.membership_type && <FilterChip label="Type" value={filters.membership_type} />}
               {filters.blood_group && <FilterChip label="Blood" value={filters.blood_group} />}
               {filters.area && <FilterChip label="Area" value={filters.area} />}
+              {filters.pincode && <FilterChip label="Pincode" value={filters.pincode} />}
               {(filters.ageMin || filters.ageMax) && (
                 <span className="inline-flex items-center gap-2 bg-navy text-white px-3 py-1 rounded-full text-sm">
                   Age: <strong>{filters.ageMax ? `${filters.ageMin}–${filters.ageMax}` : `${filters.ageMin}+`}</strong>
