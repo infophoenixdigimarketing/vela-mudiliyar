@@ -94,9 +94,9 @@ export default function IdCards() {
     setDownloading(true);
     try {
       const membersToDownload = members.filter(m => selectedMembers.includes(m.id));
-      // Exact ID card size: 4in x 2.5in (101.6mm x 63.5mm) — same ratio as the 1280x800 design
-      const CARD_W = 101.6;
-      const CARD_H = 63.5;
+      // Exact ID card size: 8.5cm x 5.5cm (85mm x 55mm)
+      const CARD_W = 85;
+      const CARD_H = 55;
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_W, CARD_H] });
 
       // Pre-processed images: square faint watermark + transparent signature
@@ -115,14 +115,16 @@ export default function IdCards() {
         container.style.left = '-9999px';
         container.style.top = '0';
         container.style.width = '1280px';
-        container.style.height = '800px';
         container.style.backgroundColor = '#fff';
         container.style.zIndex = '-9999';
         document.body.appendChild(container);
 
+        // Body height now grows with content instead of clipping at a fixed
+        // 437px — a long address used to push the signature/"Secretary" line
+        // past the card's bottom edge where overflow:hidden silently cut it off.
         const dobFmt = member?.dob ? member.dob.split('T')[0].split('-').reverse().join('-') : '—';
         const cardHtml = `
-          <div style="width:1280px;height:800px;font-family:'Noto Sans',sans-serif;background:#fff;margin:0;padding:0;overflow:hidden">
+          <div style="width:1280px;min-height:800px;font-family:'Noto Sans',sans-serif;background:#fff;margin:0;padding:0">
             <!-- HEADER -->
             <div style="height:300px;background:#2f3084;border-bottom:5px solid #c41e3a;display:flex;align-items:center;padding:0 34px 0 30px;box-sizing:border-box;gap:20px;color:#fff">
               <img src="${sealDataUrl}" style="width:238px;height:246px;flex-shrink:0;object-fit:contain"/>
@@ -135,30 +137,32 @@ export default function IdCards() {
             </div>
 
             <!-- BODY with faint round watermark (pre-baked, square = stays round) -->
-            <div style="position:relative;height:437px;background:linear-gradient(180deg,#ffffff 0%,#f2f7fd 55%,#e6eff9 100%);overflow:hidden">
-              ${watermarkDataUrl ? `<img src="${watermarkDataUrl}" style="position:absolute;left:450px;top:25px;width:380px;height:380px"/>` : ''}
+            <div style="position:relative;min-height:437px;background:linear-gradient(180deg,#ffffff 0%,#f2f7fd 55%,#e6eff9 100%)">
+              ${watermarkDataUrl ? `<img src="${watermarkDataUrl}" style="position:absolute;left:450px;top:25px;width:380px;height:380px;z-index:0"/>` : ''}
 
-              <!-- LEFT: photo + plain MVA-ID text -->
-              <div style="position:absolute;left:78px;top:38px;width:296px;display:flex;flex-direction:column;align-items:center">
-                <div style="width:296px;height:334px;border:6px solid #2f3084;box-sizing:border-box;background:#bfe3e6;overflow:hidden;display:flex;align-items:center;justify-content:center">
-                  ${member?.photo ? `<img src="${member.photo}" style="width:100%;height:100%;object-fit:cover;"/>` : `<div style="font-size:96px">${member?.sex === 'M' ? '👤' : '👩'}</div>`}
+              <div style="position:relative;z-index:1;display:flex;gap:76px;padding:20px 36px 20px 78px;box-sizing:border-box">
+                <!-- LEFT: photo + plain MVA-ID text -->
+                <div style="width:296px;flex-shrink:0;margin-top:18px;display:flex;flex-direction:column;align-items:center">
+                  <div style="width:296px;height:334px;border:6px solid #2f3084;box-sizing:border-box;background:#bfe3e6;overflow:hidden;display:flex;align-items:center;justify-content:center">
+                    ${member?.photo ? `<img src="${member.photo}" style="width:100%;height:100%;object-fit:cover;"/>` : `<div style="font-size:96px">${member?.sex === 'M' ? '👤' : '👩'}</div>`}
+                  </div>
+                  <div style="font-size:33px;font-weight:700;color:#1a237e;letter-spacing:.5px;margin-top:6px">${member?.mva_id || 'MVA-ID'}</div>
                 </div>
-                <div style="font-size:33px;font-weight:700;color:#1a237e;letter-spacing:.5px;margin-top:6px">${member?.mva_id || 'MVA-ID'}</div>
-              </div>
 
-              <!-- RIGHT: details, signature flows BELOW address (never overlaps) -->
-              <div style="position:absolute;left:450px;top:20px;right:36px">
-                <div style="font-size:37px;font-weight:600;color:#2e7d32;padding-left:110px;margin-bottom:8px">${memberType === 'life' ? 'Life Member' : 'Annual Member'}</div>
-                <div style="display:grid;grid-template-columns:240px 26px 1fr;align-items:start;font-size:34px;font-weight:700;color:#1a237e;line-height:44px">
-                  <div>Name</div><div>:</div><div>${member?.full_name || '—'}</div>
-                  <div>DOB</div><div>:</div><div>${dobFmt}</div>
-                  <div>Blood Group</div><div>:</div><div>${member?.blood_group || '—'}</div>
-                  <div>Contact</div><div>:</div><div>${member?.phone || '—'}</div>
-                  <div>Address</div><div>:</div><div style="word-break:break-word;line-height:1.3">${member?.residence_address || '—'}</div>
-                </div>
-                <div style="margin-top:8px;display:flex;flex-direction:column;align-items:flex-start">
-                  ${signDataUrl ? `<img src="${signDataUrl}" style="width:180px;height:65px;object-fit:contain"/>` : ''}
-                  <div style="font-size:30px;font-weight:600;color:#2e7d32;margin-top:-2px">Secretary</div>
+                <!-- RIGHT: details, signature flows BELOW address (never overlaps) -->
+                <div style="flex:1">
+                  <div style="font-size:37px;font-weight:600;color:#2e7d32;padding-left:110px;margin-bottom:8px">${memberType === 'life' ? 'Life Member' : 'Annual Member'}</div>
+                  <div style="display:grid;grid-template-columns:240px 26px 1fr;align-items:start;font-size:34px;font-weight:700;color:#1a237e;line-height:44px">
+                    <div>Name</div><div>:</div><div>${member?.full_name || '—'}</div>
+                    <div>DOB</div><div>:</div><div>${dobFmt}</div>
+                    <div>Blood Group</div><div>:</div><div>${member?.blood_group || '—'}</div>
+                    <div>Contact</div><div>:</div><div>${member?.phone || '—'}</div>
+                    <div>Address</div><div>:</div><div style="word-break:break-word;line-height:1.3">${member?.residence_address || '—'}</div>
+                  </div>
+                  <div style="margin-top:8px;display:flex;flex-direction:column;align-items:flex-start">
+                    ${signDataUrl ? `<img src="${signDataUrl}" style="width:180px;height:65px;object-fit:contain"/>` : ''}
+                    <div style="font-size:30px;font-weight:600;color:#2e7d32;margin-top:-2px">Secretary</div>
+                  </div>
                 </div>
               </div>
             </div>

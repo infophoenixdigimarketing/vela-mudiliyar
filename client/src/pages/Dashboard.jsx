@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllMembers } from '../lib/memberStore';
+import { getSitePage } from '../lib/siteContent';
+import { DEFAULT_LEADERS } from '../lib/siteDefaults';
 
 // Same 8 standard groups offered in the Add Member form — always shown on the
 // dashboard, even at 0, so the distribution isn't missing types with nobody in them.
@@ -30,6 +32,7 @@ export default function Dashboard() {
     '18 to 25': 0, '25 to 35': 0, '35 to 50': 0, '50 to 60': 0, '60 and above': 0,
   });
   const [pincodes, setPincodes] = useState({});
+  const [leaderIntros, setLeaderIntros] = useState([]);
   const [cardStats, setCardStats] = useState({ draft: 0, sent: 0, approved: 0 });
   const [recentMembers, setRecentMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +96,26 @@ export default function Dashboard() {
     setRecentMembers(recent);
 
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const buildCounts = (names) => {
+      if (cancelled) return;
+      const members = getAllMembers();
+      setLeaderIntros(names.map((name) => {
+        const target = name.trim().toLowerCase();
+        const count = members.filter(m => (m.introduced_by || '').trim().toLowerCase() === target).length;
+        return { name, count };
+      }));
+    };
+    getSitePage('leaders')
+      .then((saved) => {
+        const names = saved?.leaders?.length ? saved.leaders.map(l => l.name) : DEFAULT_LEADERS.map(l => l.name);
+        buildCounts(names);
+      })
+      .catch(() => buildCounts(DEFAULT_LEADERS.map(l => l.name)));
+    return () => { cancelled = true; };
   }, []);
 
   const StatTile = ({ title, value, color, path }) => (
@@ -169,7 +192,7 @@ export default function Dashboard() {
       )}
 
       {/* Data Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Blood Groups */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-bold text-navy mb-4">Blood Group Distribution</h3>
@@ -242,6 +265,26 @@ export default function Dashboard() {
                   <span className="bg-navy text-white px-3 py-1 rounded-full text-sm tabular-figures">{count}</span>
                 </Link>
               ))}
+          </div>
+        </div>
+
+        {/* Introduced By (Leaders & Directors) */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-bold text-navy mb-4">Introduced By (Leaders &amp; Directors)</h3>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {leaderIntros.length === 0 && (
+              <p className="text-sm text-gray-500">Loading...</p>
+            )}
+            {leaderIntros.map(({ name, count }) => (
+              <Link
+                key={name}
+                to={`/members?introduced_by=${encodeURIComponent(name)}`}
+                className="flex items-center justify-between hover:bg-card-blue p-2 -mx-2 rounded transition"
+              >
+                <span className="font-medium text-sm">{name}</span>
+                <span className="bg-navy text-white px-3 py-1 rounded-full text-sm tabular-figures">{count}</span>
+              </Link>
+            ))}
           </div>
         </div>
       </div>

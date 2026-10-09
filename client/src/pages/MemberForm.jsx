@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getMemberById, getAllMembers, saveMember, linkFamily } from '../lib/memberStore';
+import { getSitePage } from '../lib/siteContent';
+import { DEFAULT_LEADERS } from '../lib/siteDefaults';
 
 export default function MemberForm() {
   const { id } = useParams();
@@ -14,6 +16,9 @@ export default function MemberForm() {
   const [allMembers, setAllMembers] = useState([]);
   const [familyQuery, setFamilyQuery] = useState('');
   const [showFamilyDropdown, setShowFamilyDropdown] = useState(false);
+  const [leaderOptions, setLeaderOptions] = useState(DEFAULT_LEADERS);
+  const [introducedByQuery, setIntroducedByQuery] = useState('');
+  const [showIntroducedByDropdown, setShowIntroducedByDropdown] = useState(false);
 
   const [form, setForm] = useState({
     full_name: '',
@@ -48,6 +53,14 @@ export default function MemberForm() {
       loadMember();
     }
   }, [id]);
+
+  useEffect(() => {
+    getSitePage('leaders')
+      .then((saved) => {
+        if (saved?.leaders?.length) setLeaderOptions(saved.leaders);
+      })
+      .catch(() => { /* keep DEFAULT_LEADERS fallback */ });
+  }, []);
 
   const loadMember = async () => {
     try {
@@ -87,6 +100,7 @@ export default function MemberForm() {
         const fam = getMemberById(data.family_member_id);
         if (fam) setFamilyQuery(`${fam.full_name} (${fam.mva_id})`);
       }
+      setIntroducedByQuery(data.introduced_by || '');
     } catch (err) {
       setError('Failed to load member');
     } finally {
@@ -112,6 +126,19 @@ export default function MemberForm() {
     if (name === 'phone') {
       checkDuplicate(value);
     }
+  };
+
+  const handleIntroducedByChange = (e) => {
+    const value = e.target.value;
+    setIntroducedByQuery(value);
+    setForm(prev => ({ ...prev, introduced_by: value }));
+    setShowIntroducedByDropdown(true);
+  };
+
+  const selectIntroducedBy = (name) => {
+    setIntroducedByQuery(name);
+    setForm(prev => ({ ...prev, introduced_by: name }));
+    setShowIntroducedByDropdown(false);
   };
 
   const handleSubmit = async (e) => {
@@ -171,6 +198,23 @@ export default function MemberForm() {
         )
         .slice(0, 8)
     : [];
+
+  // Combines leaders/directors with every current member — so a person added
+  // just now already shows up here the next time this form is opened, since
+  // both lists are re-read live (allMembers from getAllMembers(), leaders from
+  // the CMS) rather than hardcoded.
+  const introducedByOptions = [
+    ...leaderOptions.map(l => ({ name: l.name, tag: l.designation || 'Leader' })),
+    ...allMembers
+      .filter(m => String(m.id) !== String(id))
+      .map(m => ({ name: m.full_name, tag: m.mva_id })),
+  ].filter(o => o.name);
+
+  const filteredIntroducedBy = introducedByQuery.trim()
+    ? introducedByOptions
+        .filter(o => o.name.toLowerCase().includes(introducedByQuery.toLowerCase()))
+        .slice(0, 8)
+    : leaderOptions.map(l => ({ name: l.name, tag: l.designation || 'Leader' })).slice(0, 16);
 
   return (
     <div className="space-y-6">
@@ -393,16 +437,33 @@ export default function MemberForm() {
         <fieldset className="space-y-4">
           <h2 className="text-xl font-bold text-navy border-b pb-4">Additional Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">Introduced By</label>
               <input
                 type="text"
-                name="introduced_by"
-                value={form.introduced_by}
-                onChange={handleChange}
+                value={introducedByQuery}
+                onChange={handleIntroducedByChange}
+                onFocus={() => setShowIntroducedByDropdown(true)}
+                onBlur={() => setTimeout(() => setShowIntroducedByDropdown(false), 150)}
+                placeholder="Search leaders, directors or members..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy"
-                placeholder="Name of the person who introduced"
               />
+              {showIntroducedByDropdown && filteredIntroducedBy.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                  {filteredIntroducedBy.map((o, i) => (
+                    <button
+                      type="button"
+                      key={`${o.name}-${i}`}
+                      onMouseDown={() => selectIntroducedBy(o.name)}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-card-blue"
+                    >
+                      <span className="font-medium">{o.name}</span>
+                      <span className="text-gray-500 ml-2 text-xs">{o.tag}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Pick from the list, or type any other name</p>
             </div>
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">Family Member</label>

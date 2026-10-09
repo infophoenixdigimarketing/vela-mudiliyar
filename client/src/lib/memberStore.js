@@ -159,15 +159,31 @@ export async function saveMember(member) {
   return { member: reconciled, synced: true };
 }
 
-export function deleteMember(id) {
+// Removes locally first, then pushes the delete to the server if connected.
+// Resolves to { synced }: synced is false if the record only came off the
+// local cache (offline, or the server rejected it) — same shape of signal
+// saveMember gives, so callers can warn the admin rather than assume it landed.
+export async function deleteMember(id) {
   const numId = Number(id);
-  if (numId && numId <= 60) {
+  if (!isServerConnected() && numId && numId <= 60) {
+    // Demo-mode sample member — there's no server copy to remove, so mark
+    // it departed instead (the sample set itself is regenerated, not stored).
     const overrides = getOverrides();
     overrides[numId] = { ...overrides[numId], status: 'departed' };
     localStorage.setItem('memberOverrides', JSON.stringify(overrides));
-  } else {
-    const stored = getStoredMembers().filter(m => String(m.id) !== String(id));
-    localStorage.setItem('appMembers', JSON.stringify(stored));
+    return { synced: true };
+  }
+
+  const stored = getStoredMembers().filter(m => String(m.id) !== String(id));
+  localStorage.setItem('appMembers', JSON.stringify(stored));
+
+  if (!isServerConnected()) return { synced: false };
+  try {
+    await apiFetch(`members?id=${id}`, { method: 'DELETE' });
+    return { synced: true };
+  } catch (e) {
+    console.warn('Delete push failed:', e.message);
+    return { synced: false };
   }
 }
 

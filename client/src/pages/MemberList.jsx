@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Edit, Eye, Download, Upload } from 'lucide-react';
-import { getAllMembers, canEdit } from '../lib/memberStore';
+import { Search, Edit, Eye, Download, Upload, Trash2 } from 'lucide-react';
+import { getAllMembers, canEdit, deleteMember } from '../lib/memberStore';
 
 // Same age calculation the Dashboard uses to build its Age Group Distribution,
 // kept here too so a click-through from there filters the exact same people.
@@ -25,6 +25,7 @@ export default function MemberList() {
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [sortField, setSortField] = useState('full_name');
   const [sortDir, setSortDir] = useState('asc');
+  const [deletingId, setDeletingId] = useState(null);
   const limit = 25;
 
   const filters = {
@@ -33,6 +34,7 @@ export default function MemberList() {
     blood_group: searchParams.get('blood_group'),
     area: searchParams.get('area'),
     pincode: searchParams.get('pincode'),
+    introduced_by: searchParams.get('introduced_by'),
     ageMin: searchParams.get('ageMin'),
     ageMax: searchParams.get('ageMax'),
   };
@@ -76,6 +78,10 @@ export default function MemberList() {
       if (filters.pincode) {
         filtered = filtered.filter(m => m.pincode === filters.pincode);
       }
+      if (filters.introduced_by) {
+        const target = filters.introduced_by.trim().toLowerCase();
+        filtered = filtered.filter(m => (m.introduced_by || '').trim().toLowerCase() === target);
+      }
       if (filters.ageMin || filters.ageMax) {
         filtered = filtered.filter(m => {
           const age = getAge(m.dob);
@@ -107,6 +113,26 @@ export default function MemberList() {
       console.error('Failed to load members:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (member) => {
+    const confirmed = window.confirm(
+      `Delete ${member.full_name} (${member.mva_id})?\n\nThis cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(member.id);
+    try {
+      const { synced } = await deleteMember(member.id);
+      if (!synced) {
+        alert('Member removed, but the change could not be saved to the server — it may reappear on next sync.');
+      }
+      await loadMembers();
+    } catch (err) {
+      alert('Delete failed: ' + err.message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -319,6 +345,7 @@ MVA-ID-005,Srinivas Reddy,S/O Hari Reddy,"654 New Bamboo Bazaar, Mysore 570021",
               {filters.blood_group && <FilterChip label="Blood" value={filters.blood_group} />}
               {filters.area && <FilterChip label="Area" value={filters.area} />}
               {filters.pincode && <FilterChip label="Pincode" value={filters.pincode} />}
+              {filters.introduced_by && <FilterChip label="Introduced By" value={filters.introduced_by} />}
               {(filters.ageMin || filters.ageMax) && (
                 <span className="inline-flex items-center gap-2 bg-navy text-white px-3 py-1 rounded-full text-sm">
                   Age: <strong>{filters.ageMax ? `${filters.ageMin}–${filters.ageMax}` : `${filters.ageMin}+`}</strong>
@@ -418,6 +445,16 @@ MVA-ID-005,Srinivas Reddy,S/O Hari Reddy,"654 New Bamboo Bazaar, Mysore 570021",
                       <Link to={`/members/${member.id}/edit`} className="text-blue-600 hover:bg-blue-50 p-2 rounded">
                         <Edit size={16} />
                       </Link>
+                      )}
+                      {canEdit() && (
+                      <button
+                        onClick={() => handleDelete(member)}
+                        disabled={deletingId === member.id}
+                        className="text-red-600 hover:bg-red-50 p-2 rounded disabled:opacity-40"
+                        title="Delete member"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                       )}
                     </td>
                   </tr>
