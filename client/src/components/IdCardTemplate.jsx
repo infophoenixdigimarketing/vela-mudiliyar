@@ -4,12 +4,13 @@ export default function IdCardTemplate({ member, type = 'life', scale = 1 }) {
   const memberType = type === 'life' ? 'Life Member' : 'Annual Member';
   const dob = member?.dob ? dayjs(member.dob).format('DD-MM-YYYY') : '—';
 
-  // Outer box reserves the scaled size as a minimum, but can grow — a long
-  // address (3+ wrapped lines) used to push the signature/"Secretary" line
-  // past the card's bottom edge where overflow:hidden silently cut it off.
+  // Outer box reserves exactly the scaled thumbnail size and crops to it —
+  // this is only ever used as a small preview (scale 0.18–0.21), never as
+  // the print target, so it's fine for a rare very-long address to crop here;
+  // the actual PDF (MemberView/IdCards) renders at full size and never clips.
   return (
-    <div style={{ width: `${1280 * scale}px`, minHeight: `${800 * scale}px` }}>
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', position: 'relative', width: '1280px', minHeight: '800px', background: '#ffffff', fontFamily: "'Noto Sans', Verdana, sans-serif", boxShadow: '0 4px 20px rgba(0,0,0,.25)' }}>
+    <div style={{ width: `${1280 * scale}px`, height: `${800 * scale}px`, overflow: 'hidden' }}>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', position: 'relative', width: '1280px', height: '800px', background: '#ffffff', overflow: 'hidden', fontFamily: "'Noto Sans', Verdana, sans-serif", boxShadow: '0 4px 20px rgba(0,0,0,.25)' }}>
 
         {/* HEADER */}
         <div style={{ height: '300px', background: '#2f3084', borderBottom: '5px solid #c41e3a', display: 'flex', alignItems: 'center', padding: '0 34px 0 30px', boxSizing: 'border-box', gap: '20px' }}>
